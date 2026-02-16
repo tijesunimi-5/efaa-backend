@@ -2,7 +2,7 @@ import { Pool } from "pg";
 
 // 1. Added // after postgresql:
 // 2. Changed port from 8080 to 5432
-const connectionString = "postgresql://postgres:musictutor@localhost:8080/EFAA";
+const connectionString = process.env.POSTGRES_URL || "postgresql://postgres:musictutor@localhost:5432/EFAA";
 
 const isProduction = process.env.NODE_ENV === "production";
 
