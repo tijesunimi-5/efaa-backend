@@ -12,26 +12,31 @@ router.get("/users", async (request, response) => {
   try {
     const result = await pool.query(query);
     const users = result.rows[0];
-
+    console.log("Users fetched successfully", users);
     response.status(200).send({ message: "Users fetch", data: users });
   } catch (error) {
     console.log("Error exists");
-    res.status(500).json({ error: "Server error during user fetch" });
+    response.status(500).json({ error: "Server error during user fetch" });
   }
 });
 
-router.post("/users", async (request, response) => {
-  const { fullName, email, phone, country } = request.body;
+router.post("/authentication/users", async (request, response) => {
+  const { fullName, email, phone, country, state, latitude, longitude } =
+    request.body;
 
   try {
+    // 1. Update or Create the User
     const userQuery = `
-      INSERT INTO users (full_name, email, phone, country, onboarding_completed)
-      VALUES ($1, $2, $3, $4, TRUE)
+      INSERT INTO users (full_name, email, phone, country, state, latitude, longitude, onboarding_completed)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
       ON CONFLICT (email) 
       DO UPDATE SET 
         full_name = EXCLUDED.full_name,
         phone = EXCLUDED.phone,
         country = EXCLUDED.country,
+        state = EXCLUDED.state,
+        latitude = EXCLUDED.latitude,
+        longitude = EXCLUDED.longitude,
         onboarding_completed = TRUE
       RETURNING *;
     `;
@@ -41,10 +46,21 @@ router.post("/users", async (request, response) => {
       email,
       phone,
       country,
+      state,
+      latitude,
+      longitude,
     ]);
     const user = result.rows[0];
 
-    // Issued for 10 years for one-time registration
+    // 2. Also log to user_locations table for history
+    if (latitude && longitude) {
+      await pool.query(
+        "INSERT INTO user_locations (user_id, latitude, longitude) VALUES ($1, $2, $3)",
+        [user.id, latitude, longitude],
+      );
+    }
+
+    // 3. Issue the long-lived token (10 years)
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
