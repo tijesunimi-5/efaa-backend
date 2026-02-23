@@ -5,9 +5,7 @@ import "dotenv/config";
 const isProduction = process.env.NODE_ENV === "production";
 
 // Priority: 1. Env Variable (Production/Neon), 2. Hardcoded Neon (Fallback), 3. Localhost
-const connectionString =
-  process.env.POSTGRES_URL ||
-  "postgresql://postgres:musictutor@localhost:8080/EFAA";
+const connectionString = process.env.POSTGRES_URL || "postgresql://postgres:musictutor@localhost:8080/EFAA";
   
 const pool = new Pool({
   connectionString: connectionString,
