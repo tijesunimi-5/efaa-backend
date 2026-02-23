@@ -9,13 +9,18 @@ const connectionString =
   process.env.POSTGRES_URL ||
   "postgresql://postgres:musictutor@localhost:8080/EFAA";
 
+// const pool = new Pool({
+//   connectionString,
+//   // Neon ALWAYS needs SSL unless you are on a very specific local proxy.
+//   // This setting allows local dev to talk to Neon and production to talk to Neon.
+//   ssl: connectionString.includes("neon.tech")
+//     ? { rejectUnauthorized: false }
+//     : false,
+// });
 const pool = new Pool({
-  connectionString,
-  // Neon ALWAYS needs SSL unless you are on a very specific local proxy.
-  // This setting allows local dev to talk to Neon and production to talk to Neon.
-  ssl: connectionString.includes("neon.tech")
-    ? { rejectUnauthorized: false }
-    : false,
+  connectionString: connectionString,
+  
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
 pool.on("error", (err) => {
