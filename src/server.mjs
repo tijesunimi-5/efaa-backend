@@ -25,6 +25,6 @@ app.use(generalRouter);
 app.get("/", (_, response) => response.send("Emergency Service is live"));
 
 // Listening on 0.0.0.0 is essential for cloud discovery
-server.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Emergency service is live on PORT: ${PORT}`);
 });
