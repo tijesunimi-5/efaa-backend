@@ -11,7 +11,7 @@ router.get("/users", async (request, response) => {
 
   try {
     const result = await pool.query(query);
-    const users = result.rows[0];
+    const users = result.rows;
     console.log("Users fetched successfully", users);
     response.status(200).send({ message: "Users fetch", data: users });
   } catch (error) {
