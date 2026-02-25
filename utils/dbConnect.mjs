@@ -1,22 +1,23 @@
-import pg from "pg";
-const { Pool } = pg;
-import "dotenv/config";
+import { Pool } from "pg";
 
+// Determine the connection string: use the secure DATABASE_URL from environment variables (Vercel)
+// or fallback to a local development connection string if needed, although using the ENV variable
+// in development too is preferred practice.
+const connectionString =
+  process.env.DATABASE_URL ||
+  "postgresql://postgres:musictutor@localhost:8080/90Database";
+
+// IMPORTANT: Neon requires SSL/TLS. This configuration is essential for Vercel/Node.js connections.
 const isProduction = process.env.NODE_ENV === "production";
 
-// Priority: 1. Env Variable (Production/Neon), 2. Hardcoded Neon (Fallback), 3. Localhost
-const connectionString = process.env.POSTGRES_URL || "postgresql://postgres:musictutor@localhost:8080/EFAA";
-  
 const pool = new Pool({
   connectionString: connectionString,
-  // This covers both Render production and local connecting to Neon
-  ssl: connectionString.includes("neon.tech")
-    ? { rejectUnauthorized: false }
-    : false,
+
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
 });
 
-pool.on("error", (err) => {
-  console.error("Unexpected error on idle database client", err);
+pool.on("error", (err, client) => {
+  console.error("Unexpected error on idle client", err);
   process.exit(-1);
 });
 
