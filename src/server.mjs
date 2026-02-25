@@ -14,7 +14,16 @@ const allowedOrigins = ["http://localhost:3000", "https://efaa-two.vercel.app"];
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like Postman, curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      } else {
+        return callback(new Error("Not allowed by CORS"));
+      }
+    },
     exposedHeaders: ["token", "Authorization"],
     credentials: true,
   }),
