@@ -1,59 +1,50 @@
-
-import { OAuth2Client } from "google-auth-library";
+import pool from "../utils/dbConnect.mjs";
 import jwt from "jsonwebtoken";
-import pool from "../db.js";
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-export const googleAuth = async (req, res) => {
+export const quickLogin = async (req, res) => {
+  const { identifier } = req.body; // Can be email or phone number
   try {
-    const { id_token } = req.body;
-
-    const ticket = await client.verifyIdToken({
-      idToken: id_token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-
-    const { sub, email, name, picture } = payload;
-
-    // Check if user exists
-    const existingUser = await pool.query(
-      "SELECT * FROM users WHERE google_id = $1",
-      [sub],
+    const result = await pool.query(
+      "SELECT * FROM users WHERE email = $1 OR phone = $2",
+      [identifier, identifier],
     );
 
-    let user;
+    if (result.rows.length > 0) {
+      const user = result.rows[0];
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        expiresIn: "30d",
+      });
 
-    if (existingUser.rows.length === 0) {
-      const newUser = await pool.query(
-        "INSERT INTO users (google_id, email, full_name, profile_picture) VALUES ($1, $2, $3, $4) RETURNING *",
-        [sub, email, name, picture],
-      );
-      user = newUser.rows[0];
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user;
+      res.status(200).json({ success: true, token, user: userWithoutPassword });
     } else {
-      user = existingUser.rows[0];
+      res
+        .status(404)
+        .json({
+          success: false,
+          message: "No account associated with this info.",
+        });
     }
-
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "30d" },
-    );
-
-    // Send as httpOnly cookie
-    res.cookie("efaa_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-
-    res.status(200).json({ message: "Authentication successful" });
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: "Invalid Google token" });
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const verifyToken = async (req, res) => {
+  // req.user is populated by your authenticateToken middleware
+  try {
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [
+      req.user.id,
+    ]);
+    if (result.rows.length > 0) {
+      const { password, ...user } = result.rows[0];
+      res.status(200).json({ success: true, user });
+    } else {
+      res.status(401).json({ success: false });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false });
   }
 };
