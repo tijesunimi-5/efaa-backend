@@ -111,4 +111,49 @@ router.post("/protocols", authenticateToken, isMedic, async (req, res) => {
   }
 });
 
+router.get("/protocols", authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT id, slug, title, category FROM emergency_guides ORDER BY title ASC",
+    );
+    res.status(200).json({ success: true, data: result.rows });
+  } catch (err) {
+    console.error("Error fetching protocols:", err);
+    res.status(500).json({ success: false, message: "Database error" });
+  }
+});
+
+// Route: GET /protocols/:slug
+router.get("/protocols/:slug", authenticateToken, async (req, res) => {
+  const { slug } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT title, nodes, category FROM emergency_guides WHERE slug = $1",
+      [slug],
+    );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Protocol not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        title: result.rows[0].title,
+        nodes:
+          typeof result.rows[0].nodes === "string"
+            ? JSON.parse(result.rows[0].nodes)
+            : result.rows[0].nodes,
+        category: result.rows[0].category,
+      },
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ success: false, message: "Error fetching specific protocol" });
+  }
+});
+
 export default router;
