@@ -1,9 +1,8 @@
 import { Pool } from "pg";
 
-// Determine the connection string: use the secure DATABASE_URL from environment variables (Vercel)
-// or fallback to a local development connection string if needed, although using the ENV variable
-// in development too is preferred practice.
-const connectionString = process.env.POSTGRES_URL;
+
+// const connectionString = process.env.POSTGRES_URL;
+const connectionString = process.env.DATABASE_URL;
 
 // IMPORTANT: Neon requires SSL/TLS. This configuration is essential for Vercel/Node.js connections.
 const isProduction = process.env.NODE_ENV === "production";
