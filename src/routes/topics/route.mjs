@@ -1,7 +1,7 @@
 import pool from "../../../utils/dbConnect.mjs";
 import { Router } from "express";
 // Import your auth middleware (update the path to where your auth middleware lives)
-import authenticateToken from "../../../utils/middlewares/authenticateToken.mjs";
+import authenticateToken from "../../../middlewares/authenticateToken.mjs";
 
 const router = Router();
 
@@ -74,5 +74,54 @@ router.post("/feedback", authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: "Database error" });
   }
 });
+
+/**
+ * GET /api/topics/search
+ * Handles both the initial full-list load AND filtered searching.
+ */
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
+
+  try {
+    let queryText;
+    let queryParams = [];
+
+    // Check if q exists and is not just an empty string
+    if (q && q.trim() !== "") {
+      // Logic for ACTIVE SEARCH: Filter by title or category
+      queryText = `
+        SELECT id, slug, title, category 
+        FROM emergency_guides 
+        WHERE title ILIKE $1 OR category ILIKE $1 
+        ORDER BY title ASC 
+        LIMIT 20
+      `;
+      queryParams.push(`%${q}%`);
+    } else {
+      // Logic for INITIAL LOAD: Return the full textbook of protocols
+      queryText = `
+        SELECT id, slug, title, category 
+        FROM emergency_guides 
+        ORDER BY title ASC 
+        LIMIT 50
+      `;
+    }
+
+    const result = await pool.query(queryText, queryParams);
+
+    res.json({
+      success: true,
+      protocols: result.rows
+    });
+  } catch (err) {
+    console.error("Search/Load Error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Could not retrieve protocols from the database." 
+    });
+  }
+});
+
+
 
 export default router;

@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../../../utils/dbConnect.mjs";
-import authenticateToken from "../../../utils/middlewares/authenticateToken.mjs";
+import authenticateToken from "../../../middlewares/authenticateToken.mjs";
 
 const router = Router();
 

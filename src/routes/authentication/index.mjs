@@ -2,7 +2,7 @@ import { request, response, Router } from "express";
 import pool from "../../../utils/dbConnect.mjs";
 import jwt from "jsonwebtoken";
 import "dotenv/config";
-import authenticateToken from "../../../utils/middlewares/authenticateToken.mjs";
+import authenticateToken from "../../../middlewares/authenticateToken.mjs";
 import { quickLogin, verifyToken } from "../../../controller/authController.mjs";
 import bcrypt from "bcrypt";
 const saltRounds = 10;
@@ -309,7 +309,42 @@ router.post("/verify-otp", async (req, res) => {
 
 
 
+/**
+ * UPDATE USER PROFILE
+ * PUT /authentication/users/update
+ */
+router.put("/authentication/users/update", authenticateToken, async (req, res) => {
+  const { fullName, phone, state } = req.body;
+  const userId = req.user.userId || req.user.id;
 
+  try {
+    const result = await pool.query(
+      `UPDATE users 
+       SET full_name = $1, phone = $2, state = $3 
+       WHERE id = $4 
+       RETURNING id, full_name, email, phone, state`,
+      [fullName, phone, state, userId]
+    );
+
+    if (result.rows.length > 0) {
+      const updatedUser = result.rows[0];
+      res.status(200).json({
+        success: true,
+        user: {
+          fullName: updatedUser.full_name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          state: updatedUser.state,
+        },
+      });
+    } else {
+      res.status(404).json({ success: false, message: "User not found" });
+    }
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ success: false, error: "Internal server error" });
+  }
+});
 
 
 export default router;
