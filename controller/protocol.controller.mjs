@@ -1,5 +1,5 @@
 import { parseFile } from "../services/fileParser.service.mjs";
-import { cleanText, truncateText } from "../services/textCleaner.service.mjs";
+import { cleanText, truncateText } from "../services/textcleaner.service.mjs";
 import { extractProtocolWithAI } from "../services/aiExtraction.service.mjs";
 import { ProtocolSchema } from "../schemas/protocol.schema.mjs";
 import { calculateConfidence } from "../services/confindence.service.mjs";
