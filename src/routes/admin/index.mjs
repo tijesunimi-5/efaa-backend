@@ -3,8 +3,14 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import pool from "../../../utils/dbConnect.mjs";
 import authenticateToken from "../../../middlewares/authenticateToken.mjs";
+import multer from "multer";
+import { handleUploadError, uploadProtocol } from "../../../middlewares/uploadProtocol.mjs";
+import { extractProtocolController } from "../../../controller/extractProtocolController.mjs";
 
 const router = Router();
+const upload = multer({
+  dest: "uploads/",
+});
 
 // Middleware to ensure role is admin or medic
 const isMedic = (req, res, next) => {
@@ -155,5 +161,12 @@ router.get("/protocols/:slug", authenticateToken, async (req, res) => {
       .json({ success: false, message: "Error fetching specific protocol" });
   }
 });
+
+router.post(
+  "/extract",
+  uploadProtocol,        // 1. Multer: parse multipart, save file to disk
+  handleUploadError,     // 2. Catch Multer-specific errors (size, type)
+  extractProtocolController // 3. Extract text → parse → respond
+);
 
 export default router;
